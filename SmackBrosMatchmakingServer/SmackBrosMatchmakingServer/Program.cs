@@ -11,6 +11,7 @@ namespace SmackBrosMatchmakingServer
 {
     class Program
     {
+        static bool serverInitialized = false;
         static int port1 = 1521;
         static int port2 = 1522;
         static int port3 = 1523;
@@ -22,7 +23,38 @@ namespace SmackBrosMatchmakingServer
         static string ClientIP;
         static readonly object packetProcessQueueLock = new object();
         static Queue<Packet> packetProcessQueue = new Queue<Packet>();
+        static DateTime lastUpdate = DateTime.Now;
+
         static void Main(string[] args)
+        {
+            if (!serverInitialized)
+                StartServer();
+            while(serverInitialized)
+            {
+                if(DateTime.Now - lastUpdate > TimeSpan.FromMilliseconds(50))
+                {
+                    lock(packetProcessQueueLock)
+                        while(packetProcessQueue.Any())
+                        {
+                            var packet = packetProcessQueue.Dequeue();
+                            if(packet.GetPacketType() == 1)
+                            {
+
+                            }
+                            if(packet.GetPacketType() == 2)
+                            {
+
+                            }
+                            if (packet.GetPacketType() == 3)
+                            {
+
+                            }
+                        }
+                    lastUpdate = DateTime.Now;
+                }
+            }
+        }
+        static void StartServer()
         {
             new Task(() =>
             {
@@ -45,8 +77,8 @@ namespace SmackBrosMatchmakingServer
                 ReceivingThread.IsBackground = true;
                 ReceivingThread.Start();
             }).Start();
+            serverInitialized = true;
         }
-
     }
 }
 

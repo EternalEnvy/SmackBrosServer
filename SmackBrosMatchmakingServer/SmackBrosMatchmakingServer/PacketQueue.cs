@@ -74,7 +74,7 @@ namespace SmackBrosMatchmakingServer
                     //We still have to read it if it's old, but we just don't use it.
                     Packet.ReadPacket(stream);
             }
-            lastReceivedFromOther = Math.Max(newLastReceivedFromOther, newLastReceivedFromOther);
+            lastReceivedFromOther = newLastReceivedFromOther;
 
             return packets;
         }

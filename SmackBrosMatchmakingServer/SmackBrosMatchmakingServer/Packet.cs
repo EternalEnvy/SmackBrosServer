@@ -18,7 +18,7 @@ namespace SmackBrosMatchmakingServer
             Packet packet = null;
             if (packetType == 1)
             {
-                packet = new QueueInteractionPacket();
+                packet = new QueueInteractionPacket(true);
                 packet.ReadPacketData(stream);
             }
             if (packetType == 2)
