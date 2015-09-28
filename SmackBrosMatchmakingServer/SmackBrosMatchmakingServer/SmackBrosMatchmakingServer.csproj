@@ -48,10 +48,12 @@
     <Compile Include="QueueAcceptedJoinPacket.cs" />
     <Compile Include="QueueFinishedPacket.cs" />
     <Compile Include="QueueInteractionPacket.cs" />
+    <Compile Include="StoredPlayer.cs" />
     <Compile Include="TheQueue.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -23,7 +23,7 @@ namespace SmackBrosMatchmakingServer
             }
             if (packetType == 2)
             {
-                packet = new QueueAcceptedJoinPacket();
+                packet = new QueueStatusUpdatePacket();
                 packet.ReadPacketData(stream);
             }
             if (packetType == 3)

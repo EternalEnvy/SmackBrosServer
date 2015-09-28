@@ -11,6 +11,7 @@ namespace SmackBrosMatchmakingServer
 {
     class PacketQueue
     {
+        static readonly object lockobj = new object();
         public static PacketQueue Instance = new PacketQueue();
         List<Packet> _queue = new List<Packet>();
         long id = 0;
@@ -98,8 +99,6 @@ namespace SmackBrosMatchmakingServer
             }
         }
 
-        static readonly object lockobj = new object();
-
         public void TestLoop(UdpClient client, IPEndPoint serverIP, Queue<Packet> queue, object queueLock)
         {
             var reset = serverIP.Address.Equals(IPAddress.Any);
@@ -127,12 +126,10 @@ namespace SmackBrosMatchmakingServer
                 }
             }
         }
-
         public static void TestFunc(UdpClient client, IPEndPoint serverIP)
         {
             var buffer = new List<byte>();
             Instance.WritePackets(buffer);
-            //Returns number of bytes sent. I'm assuming this is useless?
             client.Send(buffer.ToArray(), buffer.Count, serverIP);
         }
     }

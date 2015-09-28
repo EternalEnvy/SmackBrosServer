@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Net;
 
 namespace SmackBrosMatchmakingServer
 {
@@ -11,6 +12,7 @@ namespace SmackBrosMatchmakingServer
     {
         int total_size;
         SortedDictionary<int, Queue> storage;
+        public List<Tuple<IPAddress, IPAddress>> foundMatches = new List<Tuple<IPAddress, IPAddress>>();
         public TheQueue()
         {
             this.storage = new SortedDictionary<int, Queue>();

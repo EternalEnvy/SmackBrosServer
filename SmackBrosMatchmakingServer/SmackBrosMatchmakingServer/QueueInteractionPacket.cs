@@ -9,10 +9,10 @@ namespace SmackBrosMatchmakingServer
 {
     class QueueInteractionPacket : Packet
     {
-        string name;
-        short mmr;
+        public string name;
+        public short mmr;
         public string IPAddress;
-        bool joining;
+        public bool joining;
         public QueueInteractionPacket(bool joiningQueue)
         {
             joining = joiningQueue;
@@ -23,12 +23,14 @@ namespace SmackBrosMatchmakingServer
             WriteBool(stream, joining);
             WriteStringBytes(stream, name);
             WriteShort(stream, mmr);
+            WriteStringBytes(stream, IPAddress);
         }
         public override void ReadPacketData(Stream stream)
         {
             joining = ReadBoolFromStream(stream);
             name = ReadStringFromStream(stream);
             mmr = ReadShortFromStream(stream);
+            IPAddress = ReadStringFromStream(stream);
         }
     }
 }

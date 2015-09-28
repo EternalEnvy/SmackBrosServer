@@ -20,10 +20,11 @@ namespace SmackBrosMatchmakingServer
         static UdpClient client3;
         static Thread ReceivingThread;
         static string ServerIP;
-        static string ClientIP;
+        static List<string> clientIPList = new List<string>();
         static readonly object packetProcessQueueLock = new object();
         static Queue<Packet> packetProcessQueue = new Queue<Packet>();
         static DateTime lastUpdate = DateTime.Now;
+        static TheQueue mmQueue = new TheQueue();
 
         static void Main(string[] args)
         {
@@ -31,7 +32,8 @@ namespace SmackBrosMatchmakingServer
                 StartServer();
             while(serverInitialized)
             {
-                if(DateTime.Now - lastUpdate > TimeSpan.FromMilliseconds(50))
+                int numMatches = FindMatches();
+                if(DateTime.Now - lastUpdate > TimeSpan.FromMilliseconds(100))
                 {
                     lock(packetProcessQueueLock)
                         while(packetProcessQueue.Any())
@@ -39,7 +41,16 @@ namespace SmackBrosMatchmakingServer
                             var packet = packetProcessQueue.Dequeue();
                             if(packet.GetPacketType() == 1)
                             {
-
+                                var packet2 = (QueueInteractionPacket)packet;
+                                if (packet2.joining)
+                                {
+                                    AddPlayerToQueue(packet2);
+                                    new Task(() =>
+                                    {
+                                        clientIPList.Add(packet2.IPAddress);
+                                        PacketQueue.Instance.AddPacket(new QueueStatusUpdatePacket { Accepted = true });
+                                    }).Start();
+                                }
                             }
                             if(packet.GetPacketType() == 2)
                             {
@@ -51,8 +62,39 @@ namespace SmackBrosMatchmakingServer
                             }
                         }
                     lastUpdate = DateTime.Now;
+                    foreach(string ip in clientIPList)
+                    {
+                        PacketQueue.TestFunc(client, new IPEndPoint(new IPAddress(ip.Split('.').Select(byte.Parse).ToArray()), port1));
+                    }
                 }
             }
+        }
+        static void AddPlayerToQueue(QueueInteractionPacket packet)
+        {
+            StoredPlayer playerToAdd = new StoredPlayer();
+            {
+                playerToAdd.name = packet.name; 
+                playerToAdd.playerIP = packet.IPAddress;
+                playerToAdd.mmrTolerance = 25;
+                playerToAdd.mmr = packet.mmr;
+                playerToAdd.searchedThisIteration = false;
+                playerToAdd.TimeAddedtoQueue = 0;
+            }
+            mmQueue.Enqueue(playerToAdd, packet.mmr);
+        }
+        static int FindMatches()
+        {
+            int found = 0;
+            StoredPlayer player1 = (StoredPlayer)mmQueue.Dequeue();
+            if(player1.searchedThisIteration)
+            {
+                StoredPlayer temp = player1;
+                player1 = (StoredPlayer)mmQueue.Dequeue();
+                mmQueue.Enqueue(temp, );
+            }
+            var player2 = mmQueue.Dequeue();
+
+            return found;
         }
         static void StartServer()
         {
