@@ -19,6 +19,7 @@ namespace SmackBrosMatchmakingServer
         static UdpClient client2;
         static UdpClient client3;
         static Thread ReceivingThread;
+        static Thread MatchFinderThread;
         static string ServerIP;
         static List<string> clientIPList = new List<string>();
         static readonly object packetProcessQueueLock = new object();
@@ -32,7 +33,6 @@ namespace SmackBrosMatchmakingServer
                 StartServer();
             while(serverInitialized)
             {
-                int numMatches = FindMatches();
                 if(DateTime.Now - lastUpdate > TimeSpan.FromMilliseconds(100))
                 {
                     lock(packetProcessQueueLock)
@@ -82,19 +82,16 @@ namespace SmackBrosMatchmakingServer
             }
             mmQueue.Enqueue(playerToAdd, packet.mmr);
         }
-        static int FindMatches()
+        static void FindMatches()
         {
-            int found = 0;
-            StoredPlayer player1 = (StoredPlayer)mmQueue.Dequeue();
-            if(player1.searchedThisIteration)
+            while(true)
             {
-                StoredPlayer temp = player1;
-                player1 = (StoredPlayer)mmQueue.Dequeue();
-                mmQueue.Enqueue(temp, );
+                if (DateTime.Now - lastUpdate > TimeSpan.FromMilliseconds(100))
+                {
+                    StoredPlayer player1 = (StoredPlayer)mmQueue.Peek();
+                        
+                }
             }
-            var player2 = mmQueue.Dequeue();
-
-            return found;
         }
         static void StartServer()
         {
@@ -120,6 +117,13 @@ namespace SmackBrosMatchmakingServer
                 ReceivingThread.Start();
             }).Start();
             serverInitialized = true;
+            new Task(() =>
+            {
+
+                MatchFinderThread = new Thread(() => FindMatches());
+                MatchFinderThread.IsBackground = true;
+                MatchFinderThread.Start();
+            }).Start();
         }
     }
 }

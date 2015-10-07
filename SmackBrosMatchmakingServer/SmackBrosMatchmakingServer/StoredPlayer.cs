@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SmackBrosMatchmakingServer
 {
-    struct StoredPlayer
+    public struct StoredPlayer
     {
         public string name;
         public string playerIP;
