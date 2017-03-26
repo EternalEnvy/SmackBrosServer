@@ -24,7 +24,8 @@ namespace SmackBrosMatchmakingServer
         static List<string> clientIPList = new List<string>();
         static readonly object packetProcessQueueLock = new object();
         static Queue<Packet> packetProcessQueue = new Queue<Packet>();
-        static DateTime lastUpdate = DateTime.Now;
+        static DateTime lastUpdateServerThread = DateTime.Now;
+        static DateTime lastUpdateMatchThread = DateTime.Now;
         static TheQueue mmQueue = new TheQueue();
 
         static void Main(string[] args)
@@ -33,13 +34,13 @@ namespace SmackBrosMatchmakingServer
                 StartServer();
             while(serverInitialized)
             {
-                if(DateTime.Now - lastUpdate > TimeSpan.FromMilliseconds(100))
+                if (DateTime.Now - lastUpdateServerThread > TimeSpan.FromMilliseconds(100))
                 {
-                    lock(packetProcessQueueLock)
-                        while(packetProcessQueue.Any())
+                    lock (packetProcessQueueLock)
+                        while (packetProcessQueue.Any())
                         {
                             var packet = packetProcessQueue.Dequeue();
-                            if(packet.GetPacketType() == 1)
+                            if (packet.GetPacketType() == 1)
                             {
                                 var packet2 = (QueueInteractionPacket)packet;
                                 if (packet2.joining)
@@ -52,7 +53,7 @@ namespace SmackBrosMatchmakingServer
                                     }).Start();
                                 }
                             }
-                            if(packet.GetPacketType() == 2)
+                            if (packet.GetPacketType() == 2)
                             {
 
                             }
@@ -61,12 +62,7 @@ namespace SmackBrosMatchmakingServer
 
                             }
                         }
-                    lastUpdate = DateTime.Now;
-                    foreach(string ip in clientIPList)
-                    {
-                        PacketQueue.TestFunc(client, new IPEndPoint(new IPAddress(ip.Split('.').Select(byte.Parse).ToArray()), port1));
-                    }
-                }
+                }         
             }
         }
         static void AddPlayerToQueue(QueueInteractionPacket packet)
@@ -78,20 +74,13 @@ namespace SmackBrosMatchmakingServer
                 playerToAdd.mmrTolerance = 25;
                 playerToAdd.mmr = packet.mmr;
                 playerToAdd.searchedThisIteration = false;
-                playerToAdd.TimeAddedtoQueue = 0;
+                playerToAdd.priority = 0;
             }
-            mmQueue.Enqueue(playerToAdd, packet.mmr);
+            mmQueue.Enqueue(playerToAdd);
         }
         static void FindMatches()
         {
-            while(true)
-            {
-                if (DateTime.Now - lastUpdate > TimeSpan.FromMilliseconds(100))
-                {
-                    StoredPlayer player1 = (StoredPlayer)mmQueue.Peek();
-                        
-                }
-            }
+            mmQueue.Match();
         }
         static void StartServer()
         {
@@ -112,11 +101,10 @@ namespace SmackBrosMatchmakingServer
                     }
                 }
                 ServerIP = localIP;
-                ReceivingThread = new Thread(() => PacketQueue.Instance.TestLoop(client2, new IPEndPoint(IPAddress.Any, port2), packetProcessQueue, packetProcessQueueLock));
+                ReceivingThread = new Thread(() => PacketQueue.Instance.ReceivingLoop(client2, new IPEndPoint(IPAddress.Any, port2), packetProcessQueue, packetProcessQueueLock));
                 ReceivingThread.IsBackground = true;
                 ReceivingThread.Start();
             }).Start();
-            serverInitialized = true;
             new Task(() =>
             {
 
@@ -124,6 +112,7 @@ namespace SmackBrosMatchmakingServer
                 MatchFinderThread.IsBackground = true;
                 MatchFinderThread.Start();
             }).Start();
+            serverInitialized = true;
         }
     }
 }

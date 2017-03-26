@@ -41,13 +41,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConcurrentPriorityQueue.cs" />
     <Compile Include="Packet.cs" />
     <Compile Include="PacketQueue.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QueueAcceptedJoinPacket.cs" />
+    <Compile Include="QueueStatusUpdatePacket.cs" />
     <Compile Include="QueueFinishedPacket.cs" />
     <Compile Include="QueueInteractionPacket.cs" />
+    <Compile Include="RSAProvider.cs" />
     <Compile Include="StoredPlayer.cs" />
     <Compile Include="TheQueue.cs" />
   </ItemGroup>

@@ -99,7 +99,7 @@ namespace SmackBrosMatchmakingServer
             }
         }
 
-        public void TestLoop(UdpClient client, IPEndPoint serverIP, Queue<Packet> queue, object queueLock)
+        public void ReceivingLoop(UdpClient client, IPEndPoint serverIP, Queue<Packet> queue, object queueLock)
         {
             var reset = serverIP.Address.Equals(IPAddress.Any);
             while (true)
@@ -126,7 +126,7 @@ namespace SmackBrosMatchmakingServer
                 }
             }
         }
-        public static void TestFunc(UdpClient client, IPEndPoint serverIP)
+        public static void SendFunc(UdpClient client, IPEndPoint serverIP)
         {
             var buffer = new List<byte>();
             Instance.WritePackets(buffer);

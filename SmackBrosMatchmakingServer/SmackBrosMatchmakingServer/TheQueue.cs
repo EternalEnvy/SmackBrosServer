@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Net;
+using System.Linq;
 
 namespace SmackBrosMatchmakingServer
 {
@@ -12,10 +13,9 @@ namespace SmackBrosMatchmakingServer
     {
         int total_size;
         List<StoredPlayer> sortedRatingList = new List<StoredPlayer>();
-        SortedDictionary<int, Queue> storage;
+        List<StoredPlayer> sortedPriorityList = new List<StoredPlayer>();
         public TheQueue()
         {
-            this.storage = new SortedDictionary<int, Queue>();
             this.total_size = 0;
         }
 
@@ -23,63 +23,30 @@ namespace SmackBrosMatchmakingServer
         {
             return (total_size == 0);
         }
-
-        public object Dequeue()
+        public void Enqueue(StoredPlayer item)
         {
-            if (IsEmpty())
+            sortedPriorityList.Add(item);
+            sortedRatingList.Add(item);
+        }
+        public void Match()
+        {
+            StoredPlayer matchWith = sortedPriorityList.Last();
+            sortedPriorityList.Remove(matchWith);
+            sortedRatingList.Remove(matchWith);
+            SortByMMR();
+            var foundMatch = MatchSearchByMMR(sortedRatingList, ref matchWith, 0, sortedRatingList.Count);
+            if(foundMatch.internalID != matchWith.internalID)
             {
-                throw new Exception("No Players in the Queue");
+                sortedRatingList.Remove(foundMatch);
+                sortedPriorityList.Remove(foundMatch);
             }
-            else
-                foreach (Queue q in storage.Values)
-                {
-                    // we use a sorted dictionary
-                    if (q.Count > 0)
-                    {
-                        total_size--;
-                        return q.Dequeue();
-                    }
-                }
-
-            throw new Exception("Error pulling from Queue");
         }
-
-        // same as above, except for peek.
-
-        public object Peek()
+        private void SortByMMR()
         {
-            if (IsEmpty())
-                throw new Exception("No Players in the Queue");
-            else
-                foreach (Queue q in storage.Values)
-                {
-                    if (q.Count > 0)
-                        return q.Peek();
-                }
-            throw new Exception("Error peeking into Queue");
+            var playerList = sortedRatingList.ToArray();
+            sortedRatingList = Sort_Merge_Rating(playerList, 0, playerList.Count()).ToList();
         }
-
-        public object Dequeue(int prio)
-        {
-            total_size--;
-            return storage[prio].Dequeue();
-        }
-        public void Enqueue(object item, int prio)
-        {
-            if (!storage.ContainsKey(prio))
-            {
-                storage.Add(prio, new Queue());
-            }
-            storage[prio].Enqueue(item);
-            total_size++;
-        }
-        private List<StoredPlayer> SortByMMR(List<StoredPlayer> toSort)
-        {
-            StoredPlayer[] playerList = toSort.ToArray();
-            playerList = SortMerge(playerList, 0, playerList.Count());
-            return playerList.ToList();
-        }
-        private StoredPlayer[] Merge(StoredPlayer[] players, int left, int middle, int right)
+        private StoredPlayer[] Merge_By_Rating(StoredPlayer[] players, int left, int middle, int right)
         {
             //find the lengths of the two halves
             int lengthLeft = middle - left;
@@ -120,7 +87,7 @@ namespace SmackBrosMatchmakingServer
             }
             return players;
         }
-        public StoredPlayer[] SortMerge(StoredPlayer[] players, int left, int right)
+        private StoredPlayer[] Sort_Merge_Rating(StoredPlayer[] players, int left, int right)
         {
             //Mergesort is the "serious" sorting algorithm
             int mid;
@@ -129,23 +96,23 @@ namespace SmackBrosMatchmakingServer
                 //find a midpoint
                 mid = (right + left) / 2;
                 //recursively call this function for each half of the current array
-                players = SortMerge(players, left, mid);
-                players = SortMerge(players, mid + 1, right);
+                players = Sort_Merge_Rating(players, left, mid);
+                players = Sort_Merge_Rating(players, mid + 1, right);
                 //once that is done, merge it
-                players = Merge(players, left, mid, right);
+                players = Merge_By_Rating(players, left, mid, right);
             }
             return players;
         }
-        public static object BinarySearch(List<StoredPlayer> input, int key, int min, int max)
+        public static StoredPlayer MatchSearchByMMR(List<StoredPlayer> input, ref StoredPlayer match, int min, int max)
         {
             while (min <= max)
             {
                 int mid = (min + max) / 2;
-                if (Math.Abs(key - input[mid].mmr) < input[mid].mmrTolerance)
+                if (Math.Abs(match.mmr - input[mid].mmr) < input[mid].mmrTolerance && match.internalID != input[mid].internalID)
                 {
-                    return mid;
+                    return input[mid];
                 }
-                else if (key < input[mid].mmr)
+                else if (match.mmr < input[mid].mmr)
                 {
                     max = mid - 1;
                 }
@@ -154,7 +121,69 @@ namespace SmackBrosMatchmakingServer
                     min = mid + 1;
                 }
             }
-            return "Item Not Found";
+            return match;
+        }
+        private void SortByPriority()
+        {
+            var playerList = sortedRatingList.ToArray();
+            sortedRatingList = Sort_Merge_Priority(playerList, 0, playerList.Count()).ToList();
+        }
+        private StoredPlayer[] Merge_By_Priority(StoredPlayer[] players, int left, int middle, int right)
+        {
+            //find the lengths of the two halves
+            int lengthLeft = middle - left;
+            int lengthRight = right - middle;
+            //set the final element of both arrays to infinity
+            StoredPlayer[] leftArray = new StoredPlayer[lengthLeft + 2];
+            StoredPlayer temp = new StoredPlayer();
+            {
+                temp.priority = 10000000;
+            }
+            leftArray[lengthLeft + 1] = temp;
+            StoredPlayer[] rightArray = new StoredPlayer[lengthRight + 1];
+            rightArray[lengthRight] = temp;
+            //create the two arrays that will be used to 
+            for (int i = 0; i <= lengthLeft; i++)
+            {
+                leftArray[i] = players[left + i];
+            }
+            for (int j = 0; j < lengthRight; j++)
+            {
+                rightArray[j] = players[middle + j + 1];
+            }
+            int iIndex = 0;
+            int jIndex = 0;
+            //take the lower element of the two arrays and add it to the new sorted array
+            for (int k = left; k <= right; k++)
+            {
+                if (leftArray[iIndex].priority <= rightArray[jIndex].priority)
+                {
+                    players[k] = leftArray[iIndex];
+                    iIndex++;
+                }
+                else
+                {
+                    players[k] = rightArray[jIndex];
+                    jIndex++;
+                }
+            }
+            return players;
+        }
+        private StoredPlayer[] Sort_Merge_Priority(StoredPlayer[] players, int left, int right)
+        {
+            //Mergesort is the "serious" sorting algorithm
+            int mid;
+            if (right > left)
+            {
+                //find a midpoint
+                mid = (right + left) / 2;
+                //recursively call this function for each half of the current array
+                players = Sort_Merge_Priority(players, left, mid);
+                players = Sort_Merge_Priority(players, mid + 1, right);
+                //once that is done, merge it
+                players = Merge_By_Priority(players, left, mid, right);
+            }
+            return players;
         }
     }
 }

@@ -8,11 +8,12 @@ namespace SmackBrosMatchmakingServer
 {
     public struct StoredPlayer
     {
+        public int internalID;
         public string name;
         public string playerIP;
         public int mmrTolerance;
         public int mmr;
         public bool searchedThisIteration;
-        public int TimeAddedtoQueue;
+        public int priority;
     }
 }
